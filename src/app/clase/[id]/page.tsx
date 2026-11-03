@@ -6,10 +6,10 @@ const API = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
 interface Alumno { id: number; nombres: string; apellidos: string; dni: string | null }
 interface Clase {
-  id: number; sede_id: number; grado_id: number; periodo_id: number;
-  fecha: string; hora_inicio: string | null; hora_fin: string | null; materia: string | null;
+  id: number; sede_id: number; nivel_id: number;
+  fecha: string; hora_inicio: string | null; hora_fin: string | null; tema: string | null;
 }
-interface Asistencia { id: number; alumno_id: number; estado: string }
+interface Asistencia { id: number; alumno_id: number; estado: string; observacion: string | null }
 
 export default async function ClasePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,7 +30,11 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
   const asistencias: Asistencia[] = asistenciasRes.ok ? await asistenciasRes.json() : [];
 
   const estadoInicial: Record<number, string> = {};
-  for (const a of asistencias) estadoInicial[a.alumno_id] = a.estado;
+  const obsInicial: Record<number, string> = {};
+  for (const a of asistencias) {
+    estadoInicial[a.alumno_id] = a.estado;
+    if (a.observacion) obsInicial[a.alumno_id] = a.observacion;
+  }
 
   return (
     <div className="mx-auto max-w-lg px-4 py-4 pb-28">
@@ -41,7 +45,7 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
           </svg>
         </a>
         <div>
-          <h1 className="text-lg font-bold text-primary-500">{clase.materia ?? "Clase"}</h1>
+          <h1 className="text-lg font-bold text-primary-500">{clase.tema ?? "Clase"}</h1>
           <p className="text-sm text-gray-500">
             {clase.fecha}
             {clase.hora_inicio && ` · ${clase.hora_inicio.slice(0, 5)}${clase.hora_fin ? `–${clase.hora_fin.slice(0, 5)}` : ""}`}
@@ -49,14 +53,7 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
         </div>
       </header>
 
-      <div className="mb-4 flex gap-2 text-xs font-medium">
-        <span className="flex-1 rounded-lg bg-green-50 py-1 text-center text-green-700">✓ Presente</span>
-        <span className="flex-1 rounded-lg bg-yellow-50 py-1 text-center text-yellow-700">⏰ Tardanza</span>
-        <span className="flex-1 rounded-lg bg-red-50 py-1 text-center text-red-700">✗ Ausente</span>
-        <span className="flex-1 rounded-lg bg-blue-50 py-1 text-center text-blue-700">📋 Justif.</span>
-      </div>
-
-      <AsistenciaForm claseId={Number(id)} alumnos={alumnos} estadoInicial={estadoInicial} />
+      <AsistenciaForm claseId={Number(id)} alumnos={alumnos} estadoInicial={estadoInicial} obsInicial={obsInicial} />
     </div>
   );
 }
