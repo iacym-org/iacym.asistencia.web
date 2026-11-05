@@ -33,6 +33,19 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Redeploy via Portainer webhook
-        if: ${{ secrets.PORTAINER_WEBHOOK_URL != '' }}
-        run: curl -s -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}"
+      - name: Redeploy stack via Portainer
+        env:
+          PORTAINER_TOKEN: ${{ secrets.PORTAINER_API_TOKEN }}
+        run: |
+          BASE="https://portainer.jvtechsolution.com"
+          STACK_ID=7
+          ENDPOINT_ID=3
+          FILE=$(curl -sf -H "X-API-Key: $PORTAINER_TOKEN" "$BASE/api/stacks/$STACK_ID/file")
+          STACK=$(curl -sf -H "X-API-Key: $PORTAINER_TOKEN" "$BASE/api/stacks/$STACK_ID")
+          CONTENT=$(echo "$FILE" | jq -r '.StackFileContent')
+          ENV=$(echo "$STACK" | jq '.Env')
+          curl -sf -X PUT \
+            -H "X-API-Key: $PORTAINER_TOKEN" \
+            -H "Content-Type: application/json" \
+            "$BASE/api/stacks/$STACK_ID?endpointId=$ENDPOINT_ID" \
+            -d "$(jq -n --arg c "$CONTENT" --argjson e "$ENV" '{stackFileContent: $c, env: $e, pullImage: true}')"
