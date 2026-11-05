@@ -32,3 +32,7 @@ jobs:
           tags: ghcr.io/iacym-org/iacym-asistencia:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Redeploy via Portainer webhook
+        if: ${{ secrets.PORTAINER_WEBHOOK_URL != '' }}
+        run: curl -s -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}"
